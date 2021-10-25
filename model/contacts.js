@@ -1,20 +1,20 @@
-const crypto = require("crypto");
-const DB = require("./db");
-const db = new DB("contacts.json");
+const crypto = require('crypto');
+const DB = require('./db');
+const db = new DB('contacts.json');
 
 const listContacts = async () => {
   return await db.read();
 };
 
-const getContactById = async (contactId) => {
+const getContactById = async contactId => {
   const contacts = await db.read();
-  const [contact] = contacts.filter((contact) => contact.id === contactId);
+  const [contact] = contacts.filter(contact => contact.id === contactId);
   return contact;
 };
 
-const removeContact = async (contactId) => {
+const removeContact = async contactId => {
   const contacts = await db.read();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
+  const index = contacts.findIndex(contact => contact.id === contactId);
   if (index !== -1) {
     const [result] = contacts.splice(index, 1);
     await db.write(contacts);
@@ -23,7 +23,7 @@ const removeContact = async (contactId) => {
   return null;
 };
 
-const addContact = async (body) => {
+const addContact = async body => {
   const contacts = await db.read();
   const newContact = {
     id: crypto.randomUUID(),
@@ -37,7 +37,7 @@ const addContact = async (body) => {
 
 const updateContact = async (contactId, body) => {
   const contacts = await db.read();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
+  const index = contacts.findIndex(contact => contact.id === contactId);
   if (index !== -1) {
     contacts[index] = { ...contacts[index], ...body };
     await db.write(contacts);
