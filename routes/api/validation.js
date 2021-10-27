@@ -1,29 +1,24 @@
 const Joi = require('joi');
 
+const patternPhone = '\\s?[\\(]{0,1}[0-9]{3}[\\)]{0,1}\\s?\\d{3}[-]{0,1}\\d{4}';
+
 const schemaContact = Joi.object({
-  // id: Joi.string().min(1).max(20).required(),
   name: Joi.string().min(1).max(20).required(),
   email: Joi.string().email().required(),
-  phone: Joi.string().required(),
+  phone: Joi.string().pattern(new RegExp(patternPhone)).required(),
   isVaccinated: Joi.boolean().optional(),
 });
 
 const schemaContactPatch = Joi.object({
   name: Joi.string().min(1).max(20).required(),
   email: Joi.string().email().required(),
-  phone: Joi.string().required(),
+  phone: Joi.string().pattern(new RegExp(patternPhone)).required(),
   isVaccinated: Joi.boolean().optional(),
 });
 
 const schemaStatusContact = Joi.object({
   isVaccinated: Joi.boolean().required(),
 });
-
-// const patternPhone = '\\s?[\\(]{0,1}[0-9]{3}[\\)]{0,1}\\s?\\d{3}[-]{0,1}\\d{4}';
-
-// const schemaPhone = Joi.object({
-//   phone: Joi.string().pattern(new RegExp(patternPhone)).required(),
-// });
 
 const patternId = '\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}';
 
@@ -59,7 +54,3 @@ module.exports.validateStatusContact = async (req, res, next) => {
 module.exports.validateContactId = async (req, res, next) => {
   return await validate(schemaId, req.params, res, next);
 };
-
-// module.exports.validateContactPhone = async (req, res, next) => {
-//   return await validate(schemaPhone, req.params, res, next);
-// };
