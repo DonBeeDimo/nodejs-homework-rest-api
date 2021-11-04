@@ -16,27 +16,48 @@ const {
 } = require('./validation');
 
 const guard = require('../../helpers/guard');
+const role = require('../../helpers/role');
+const wrapError = require('../../helpers/errorHandler');
+const { Gender } = require('../../config/constants');
 
-router.get('/', guard, getContacts);
+router.get('/', guard, wrapError(getContacts));
 
-router.get('/:contactId', guard, validateContactId, getContact);
+router.get(
+  '/test',
+  guard,
+  role(Gender.MALE),
+  wrapError((req, res, next) => {
+    res.json({
+      status: 'success',
+      code: 200,
+      data: { message: 'Only for man' },
+    });
+  }),
+);
 
-router.post('/', guard, validateContact, saveContact);
+router.get('/:contactId', guard, validateContactId, wrapError(getContact));
 
-router.delete('/:contactId', guard, validateContactId, removeContact);
+router.post('/', guard, validateContact, wrapError(saveContact));
+
+router.delete(
+  '/:contactId',
+  guard,
+  validateContactId,
+  wrapError(removeContact),
+);
 
 router.put(
   '/:contactId',
   guard,
   [validateContactId, validateContactPatch, validateContact],
-  updateContact,
+  wrapError(updateContact),
 );
 
 router.patch(
   '/:contactId/favorite',
   guard,
   [validateContactId, validateStatusContact],
-  updateStatusFavoriteContact,
+  wrapError(updateStatusFavoriteContact),
 );
 
 module.exports = router;
