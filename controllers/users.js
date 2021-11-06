@@ -6,7 +6,7 @@ const { CustomError } = require('../helpers/customError');
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 const registration = async (req, res, next) => {
-  const { name, email, password, gender } = req.body;
+  const { name, email, password, Subscription } = req.body;
   const user = await Users.findByEmail(email);
   if (user) {
     return res.status(HttpCode.CONFLICT).json({
@@ -17,7 +17,7 @@ const registration = async (req, res, next) => {
   }
 
   try {
-    const newUser = await Users.create({ name, email, password, gender });
+    const newUser = await Users.create({ name, email, password, Subscription });
     return res.status(HttpCode.CREATED).json({
       status: 'success',
       code: HttpCode.CREATED,
@@ -25,7 +25,8 @@ const registration = async (req, res, next) => {
         id: newUser.id,
         name: newUser.name,
         email: newUser.email,
-        gender: newUser.gender,
+        subscription: newUser.subscription,
+        avatar: newUser.avatar,
       },
     });
   } catch (e) {
@@ -128,6 +129,12 @@ const userBusiness = async (req, res) => {
   });
 };
 
+const uploadAvatar = async (req, res, next) => {
+  const pic = req.file;
+  console.log(pic);
+  return res.status(HttpCode.OK).json({ pic });
+};
+
 module.exports = {
   registration,
   login,
@@ -137,4 +144,5 @@ module.exports = {
   userStarter,
   userPro,
   userBusiness,
+  uploadAvatar,
 };
