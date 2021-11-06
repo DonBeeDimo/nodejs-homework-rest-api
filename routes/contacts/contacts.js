@@ -54,6 +54,13 @@ router.put(
 );
 
 router.patch(
+  '/:contactId',
+  guard,
+  [(validateContactId, validateContactPatch)],
+  wrapError(updateContact),
+);
+
+router.patch(
   '/:contactId/favorite',
   guard,
   [validateContactId, validateStatusContact],

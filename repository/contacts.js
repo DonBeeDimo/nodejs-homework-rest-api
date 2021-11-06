@@ -14,9 +14,11 @@ const listContacts = async (userId, query) => {
     offset = 0,
   } = query;
   const searchOptions = { owner: userId };
+
   if (favorite !== null) {
     searchOptions.favorite = favorite;
   }
+
   const results = await Contact.paginate(searchOptions, {
     limit,
     offset,

@@ -1,11 +1,18 @@
 const ValidInfoContact = {
   patternPhone: '\\s?[\\(]{0,1}[0-9]{3}[\\)]{0,1}\\s?\\d{3}[-]{0,1}\\d{4}',
+  patternPassword: '^[a-zA-Z0-9]{3,30}$',
 };
 
 const Gender = {
   MALE: 'male',
   FEMALE: 'female',
   NONE: 'none',
+};
+
+const Subscription = {
+  STARTER: 'starter',
+  PRO: 'pro',
+  BUSINESS: 'business',
 };
 
 const HttpCode = {
@@ -24,6 +31,7 @@ const HttpCode = {
 
 module.exports = {
   ValidInfoContact,
+  Subscription,
   Gender,
   HttpCode,
 };

@@ -1,8 +1,10 @@
 const { HttpCode } = require('../config/constants');
 const { FORBIDDEN } = require('../messages/role-message');
 
-const guard = role => (req, res, next) => {
-  const roleUser = req.user.gender;
+const role = role => (req, res, next) => {
+  // const roleUser = req.user.gender;
+  const roleUser = req.user.subscription;
+
   if (roleUser !== role) {
     return res.status(HttpCode.FORBIDDEN).json({
       status: 'error',
@@ -13,4 +15,4 @@ const guard = role => (req, res, next) => {
   return next();
 };
 
-module.exports = guard;
+module.exports = role;
