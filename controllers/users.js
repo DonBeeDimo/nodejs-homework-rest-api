@@ -50,27 +50,29 @@ const registration = async (req, res, next) => {
         successEmail: statusEmail,
       },
     });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 };
 
-const login = async (req, res, next) => {
+const login = async (req, res, _next) => {
   const { email, password } = req.body;
   const user = await Users.findByEmail(email);
   const isValidPassword = await user?.isValidPassword(password);
 
-  if (!user || !isValidPassword || !user?.verified) {
+  if (!user || !isValidPassword || !user?.verify) {
     return res.status(HttpCode.UNAUTHORIZED).json({
       status: 'error',
       code: HttpCode.UNAUTHORIZED,
       message: 'Email or password is wrong',
     });
   }
+
   const id = user._id;
   const payload = { id };
   const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
   await Users.updateToken(id, token);
+
   return res.status(HttpCode.OK).json({
     status: 'success',
     code: HttpCode.OK,
@@ -199,8 +201,8 @@ const uploadAvatar = async (req, res, next) => {
   });
 };
 
-const verifyUser = async (req, res, next) => {
-  const user = await Users.findUserByVerifyToken(req.params.token);
+const verifyUser = async (req, res) => {
+  const user = await Users.findUserByVerifyToken(req.params.verificationToken);
   if (user) {
     await Users.updateTokenVerify(user._id, true, null);
     return res.status(HttpCode.OK).json({
@@ -211,14 +213,46 @@ const verifyUser = async (req, res, next) => {
       },
     });
   }
-  return res.status(HttpCode.BAD_REQUEST).json({
-    status: 'error',
-    code: HttpCode.BAD_REQUEST,
-    message: 'Invalid token',
-  });
+  throw new CustomError(HttpCode.NOT_FOUND, 'User not found');
 };
 
-const repeatEmailForVerifyUser = async (req, res, next) => {};
+const repeatEmailForVerifyUser = async (req, res) => {
+  const { email } = req.body;
+  const user = await Users.findByEmail(email);
+
+  if (!user) {
+    return res.status(HttpCode.BAD_REQUEST).json({
+      status: 'error',
+      code: HttpCode.BAD_REQUEST,
+      message: 'missing required field email',
+    });
+  }
+
+  if (user?.verify) {
+    return new CustomError(
+      HttpCode.BAD_REQUEST,
+      'Verification has already been passed',
+    );
+  }
+
+  if (user && !user.verify) {
+    const { email, name, verifyToken } = user;
+    const emailService = new EmailService(
+      process.env.NODE_ENV,
+      new CreateSenderSendGrid(),
+      // new CreateSenderNodemailer()
+    );
+    await emailService.sendVerifyEmail(email, name, verifyToken);
+
+    return res.status(HttpCode.OK).json({
+      status: 'success',
+      code: HttpCode.OK,
+      data: {
+        message: 'Verification email sent',
+      },
+    });
+  }
+};
 
 module.exports = {
   registration,

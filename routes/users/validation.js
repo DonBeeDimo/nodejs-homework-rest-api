@@ -24,6 +24,10 @@ const schemaSubscriptionUser = Joi.object({
     .required(),
 });
 
+const schemaRepeatEmailForVerifyUser = Joi.object({
+  email: Joi.string().email().required(),
+});
+
 const validate = async (schema, obj, res, next) => {
   try {
     await schema.validateAsync(obj);
