@@ -2,14 +2,13 @@ const multer = require('multer');
 require('dotenv').config();
 const { CustomError } = require('./customError');
 const UPLOAD_DIR = process.env.UPLOAD_DIR;
-const mkdirp = require('mkdirp');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, UPLOAD_DIR);
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, `${Date.now().toString()}_${file.originalname}`);
   },
 });
