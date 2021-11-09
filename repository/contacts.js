@@ -1,46 +1,69 @@
 const Contact = require('../model/contact');
 
-// const getCollection = async (db, name) => {
-//   const client = await db;
-//   const collection = await client.db().collection(name);
-//   return collection;
-// };
+const listContacts = async (userId, query) => {
+  // const results = await Contact.find({ owner: userId }).populate({
+  //   path: 'owner',
+  //   select: 'name email gender createdAt updatedAt',
+  // });
+  const {
+    sortBy,
+    sortByDesc,
+    filter,
+    favorite = null,
+    limit = 5,
+    offset = 0,
+  } = query;
+  const searchOptions = { owner: userId };
 
-const listContacts = async () => {
-  // const collection = await getCollection(db, 'contacts');
-  const results = await Contact.find({});
-  return results;
+  if (favorite !== null) {
+    searchOptions.favorite = favorite;
+  }
+
+  const results = await Contact.paginate(searchOptions, {
+    limit,
+    offset,
+    sort: {
+      ...(sortBy ? { [`${sortBy}`]: 1 } : {}),
+      ...(sortByDesc ? { [`${sortByDesc}`]: -1 } : {}),
+    },
+    select: filter ? filter.split('|').join(' ') : '',
+    populate: {
+      path: 'owner',
+      select: 'name email gender createdAt updatedAt',
+    },
+  });
+  const { docs: contacts } = results;
+  delete results.docs;
+  return { ...results, contacts };
 };
 
-const getContactById = async contactId => {
-  // const collection = await getCollection(db, 'contacts');
-  // const oid = new ObjectId(contactId);
-  const result = await Contact.findById(contactId);
+const getContactById = async (contactId, userId) => {
+  const result = await Contact.findOne({
+    _id: contactId,
+    owner: userId,
+  }).populate({
+    path: 'owner',
+    select: 'name email gender createdAt updatedAt',
+  });
   return result;
 };
 
-const removeContact = async contactId => {
-  // const collection = await getCollection(db, 'contacts');
-  // const oid = new ObjectId(contactId);
-  const result = await Contact.findByIdAndRemove({ _id: contactId });
+const removeContact = async (contactId, userId) => {
+  const result = await Contact.findOneAndRemove({
+    _id: contactId,
+    owner: userId,
+  });
   return result;
 };
 
 const addContact = async body => {
-  // const newContact = {
-  //   isVaccinated: false,
-  //   ...body,
-  // };
-  // const collection = await getCollection(db, 'contacts');
   const result = await Contact.create(body);
   return result;
 };
 
-const updateContact = async (contactId, body) => {
-  // const collection = await getCollection(db, 'contacts');
-  // const oid = new ObjectId(contactId);
-  const result = await Contact.findByIdAndUpdate(
-    { _id: contactId },
+const updateContact = async (contactId, body, userId) => {
+  const result = await Contact.findOneAndUpdate(
+    { _id: contactId, owner: userId },
     { ...body },
     { new: true },
   );
