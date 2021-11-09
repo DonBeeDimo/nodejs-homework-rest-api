@@ -6,12 +6,16 @@ const Users = require('../repository/users');
 // const UploadService = require('../services/file-upload');
 const UploadService = require('../services/cloud-upload');
 const { HttpCode, Subscription } = require('../config/constants');
+const EmailService = require('../services/email/service');
+const {
+  CreateSenderSendGrid,
+  CreateSenderNodemailer,
+} = require('../services/email/sender');
 require('dotenv').config();
-const { CustomError } = require('../helpers/customError');
 const SECRET_KEY = process.env.JWT_SECRET_KEY;
 
 const registration = async (req, res, next) => {
-  const { name, email, password, Subscription } = req.body;
+  const { name, email, password, subscription } = req.body;
   const user = await Users.findByEmail(email);
   if (user) {
     return res.status(HttpCode.CONFLICT).json({
@@ -22,7 +26,18 @@ const registration = async (req, res, next) => {
   }
 
   try {
-    const newUser = await Users.create({ name, email, password, Subscription });
+    // TODO: Send email for verify users
+
+    const newUser = await Users.create({ name, email, password, subscription });
+    const emailService = new EmailService(
+      process.env.NODE_ENV,
+      new CreateSenderSendGrid(),
+    );
+    const statusEmail = await emailService.sendVerifyEmail(
+      newUser.email,
+      newUser.name,
+      newUser.verifyToken,
+    );
     return res.status(HttpCode.CREATED).json({
       status: 'success',
       code: HttpCode.CREATED,
@@ -31,30 +46,33 @@ const registration = async (req, res, next) => {
         name: newUser.name,
         email: newUser.email,
         subscription: newUser.subscription,
-        avatar: newUser.avatar,
+        avatarURL: newUser.avatarURL,
+        successEmail: statusEmail,
       },
     });
-  } catch (e) {
-    next(e);
+  } catch (error) {
+    next(error);
   }
 };
 
-const login = async (req, res, next) => {
+const login = async (req, res, _next) => {
   const { email, password } = req.body;
   const user = await Users.findByEmail(email);
   const isValidPassword = await user?.isValidPassword(password);
 
-  if (!user || !isValidPassword) {
+  if (!user || !isValidPassword || !user?.verify) {
     return res.status(HttpCode.UNAUTHORIZED).json({
       status: 'error',
       code: HttpCode.UNAUTHORIZED,
-      message: 'Invalid credentials',
+      message: 'Email or password is wrong',
     });
   }
+
   const id = user._id;
   const payload = { id };
   const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '1h' });
   await Users.updateToken(id, token);
+
   return res.status(HttpCode.OK).json({
     status: 'success',
     code: HttpCode.OK,
@@ -183,6 +201,59 @@ const uploadAvatar = async (req, res, next) => {
   });
 };
 
+const verifyUser = async (req, res) => {
+  const user = await Users.findUserByVerifyToken(req.params.verificationToken);
+  if (user) {
+    await Users.updateTokenVerify(user._id, true, null);
+    return res.status(HttpCode.OK).json({
+      status: 'success',
+      code: HttpCode.OK,
+      data: {
+        massage: 'Success',
+      },
+    });
+  }
+  throw new CustomError(HttpCode.NOT_FOUND, 'User not found');
+};
+
+const repeatEmailForVerifyUser = async (req, res) => {
+  const { email } = req.body;
+  const user = await Users.findByEmail(email);
+
+  if (!user) {
+    return res.status(HttpCode.BAD_REQUEST).json({
+      status: 'error',
+      code: HttpCode.BAD_REQUEST,
+      message: 'missing required field email',
+    });
+  }
+
+  if (user?.verify) {
+    return new CustomError(
+      HttpCode.BAD_REQUEST,
+      'Verification has already been passed',
+    );
+  }
+
+  if (user && !user.verify) {
+    const { email, name, verifyToken } = user;
+    const emailService = new EmailService(
+      process.env.NODE_ENV,
+      new CreateSenderSendGrid(),
+      // new CreateSenderNodemailer()
+    );
+    await emailService.sendVerifyEmail(email, name, verifyToken);
+
+    return res.status(HttpCode.OK).json({
+      status: 'success',
+      code: HttpCode.OK,
+      data: {
+        message: 'Verification email sent',
+      },
+    });
+  }
+};
+
 module.exports = {
   registration,
   login,
@@ -193,4 +264,6 @@ module.exports = {
   userPro,
   userBusiness,
   uploadAvatar,
+  verifyUser,
+  repeatEmailForVerifyUser,
 };

@@ -1,5 +1,6 @@
 const { Schema, model } = require('mongoose');
 const gravatar = require('gravatar');
+const crypto = require('crypto');
 // const { Gender } = require('../config/constants');
 const { Subscription } = require('../config/constants');
 const bcrypt = require('bcryptjs');
@@ -46,13 +47,21 @@ const userSchema = new Schema(
       type: String,
       default: null,
     },
-    avatar: {
+    avatarURL: {
       type: String,
       default: function () {
         return gravatar.url(this.email, { s: '250' }, true);
       },
     },
     idUserCloud: { type: String, default: null },
+
+    verify: { type: Boolean, default: false },
+
+    verifyToken: {
+      type: String,
+      required: true,
+      default: crypto.randomUUID(),
+    },
   },
   {
     versionKey: false,
